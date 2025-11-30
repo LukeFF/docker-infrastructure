@@ -5,9 +5,9 @@ services:
     container_name: newt
     restart: unless-stopped
     environment:
-      - PANGOLIN_ENDPOINT=https://pangolin.0xth.party
-      - NEWT_ID=vwdfng3uvrmvuqh
-      - NEWT_SECRET=57ydgpq5z8n2gdeu1wfy08zs2k5vp43qfn3cmjen180rs3xx
+      - PANGOLIN_ENDPOINT=https://pangolin.${DOMAIN} 
+      - NEWT_ID=${NEWT_ID}
+      - NEWT_SECRET=${NEWT_SECRET}
 
   adguardhome:
     image: adguard/adguardhome:latest
@@ -37,10 +37,10 @@ services:
     container_name: adguard-lancache-dns
     restart: unless-stopped
     environment:
-      - ADGUARD_USERNAME=lukeff
-      - ADGUARD_PASSWORD=0Owd44kb500!1af1
-      - LANCACHE_SERVER=192.168.1.10
-      - ADGUARD_API=http://192.168.1.3
+      - ADGUARD_USERNAME=${ADGUARD_USERNAME}
+      - ADGUARD_PASSWORD=${ADGUARD_PASSWORD}
+      - LANCACHE_SERVER=${LANCACHE_SERVER}
+      - ADGUARD_API=${ADGUARD_API}
       - CRON_SCHEDULE=0 0 * * *
       - ALL_SERVICES=true
       - LOG_LEVEL=INFO
@@ -57,40 +57,40 @@ services:
       start_period: 30s
 
   netalertx:
-    container_name: netalertx                       # The name when you docker contiainer ls
+    container_name: netalertx
     image: ghcr.io/jokob-sk/netalertx:latest
     network_mode: host
-    read_only: true                                 # Make the container filesystem read-only
-    cap_drop:                                       # Drop all capabilities for enhanced security
+    read_only: true
+    cap_drop:
       - ALL
-    cap_add:                                        # Add only the necessary capabilities
-      - NET_ADMIN                                   # Required for ARP scanning
-      - NET_RAW                                     # Required for raw socket operations
-      - NET_BIND_SERVICE                            # Required to bind to privileged ports (nbtscan)
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW                                  
+      - NET_BIND_SERVICE
     volumes:
-      - type: volume                                # Persistent Docker-managed named volume for config + database
+      - type: volume
         source: netalertx_data
-        target: /data                               # `/data/config` and `/data/db` live inside this mount
+        target: /data
         read_only: false
-      - type: bind                                  # Bind mount for timezone consistency
+      - type: bind
         source: /etc/localtime
         target: /etc/localtime
         read_only: true
     tmpfs:
       - "/tmp:uid=20211,gid=20211,mode=1700,rw,noexec,nosuid,nodev,async,noatime,nodiratime"
     environment:
-      LISTEN_ADDR: ${LISTEN_ADDR:-0.0.0.0}                   # Listen for connections on all interfaces
-      PORT: ${PORT:-20211}                                   # Application port
-      GRAPHQL_PORT: ${GRAPHQL_PORT:-20212}                   # GraphQL API port (passed into APP_CONF_OVERRIDE at runtime)
-    mem_limit: 2048m            # Maximum memory usage
-    mem_reservation: 1024m      # Soft memory limit
-    cpu_shares: 512             # Relative CPU weight for CPU contention scenarios
-    pids_limit: 512             # Limit the number of processes/threads to prevent fork bombs
+      - LISTEN_ADDR=0.0.0.0
+      - PORT=20211
+      - GRAPHQL_PORT=20212
+    mem_limit: 2048m
+    mem_reservation: 1024m
+    cpu_shares: 512
+    pids_limit: 512
     logging:
-      driver: "json-file"       # Use JSON file logging driver
+      driver: "json-file"
       options:
-        max-size: "10m"         # Rotate log files after they reach 10MB
-        max-file: "3"           # Keep a maximum of 3 log files
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
 volumes:
@@ -98,7 +98,3 @@ volumes:
   adguard-conf:
   dns_cache:
   netalertx_data:
-
-
-
-
