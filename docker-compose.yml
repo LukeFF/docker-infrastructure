@@ -1,0 +1,104 @@
+---
+services:
+  newt:
+    image: fosrl/newt
+    container_name: newt
+    restart: unless-stopped
+    environment:
+      - PANGOLIN_ENDPOINT=https://pangolin.0xth.party
+      - NEWT_ID=vwdfng3uvrmvuqh
+      - NEWT_SECRET=57ydgpq5z8n2gdeu1wfy08zs2k5vp43qfn3cmjen180rs3xx
+
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    volumes:
+      - adguard-work:/opt/adguardhome/work
+      - adguard-conf:/opt/adguardhome/conf
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      # - 67:67/udp
+      # - 68:68/udp
+      - 80:80/tcp
+      - 443:443/tcp
+      - 443:443/udp
+      - 3000:3000/tcp
+      - 853:853/tcp
+      - 784:784/udp
+      - 853:853/udp
+      - 8853:8853/udp
+      - 5443:5443/tcp
+      - 5443:5443/udp
+
+  adguard-lancache-dns:
+    image: sq4ind/adguardhome-lancache-dns:latest
+    container_name: adguard-lancache-dns
+    restart: unless-stopped
+    environment:
+      - ADGUARD_USERNAME=lukeff
+      - ADGUARD_PASSWORD=0Owd44kb500!1af1
+      - LANCACHE_SERVER=192.168.1.10
+      - ADGUARD_API=http://192.168.1.3
+      - CRON_SCHEDULE=0 0 * * *
+      - ALL_SERVICES=true
+      - LOG_LEVEL=INFO
+      - MAX_WORKERS=3
+      - BATCH_SIZE=100
+      - CACHE_FILE=/var/cache/dns_rewrites.json
+    volumes:
+      - dns_cache:/var/cache
+    healthcheck:
+      test: [ "CMD", "sh", "/app/healthcheck.sh" ]
+      interval: 6h
+      timeout: 30s
+      retries: 2
+      start_period: 30s
+
+  netalertx:
+    container_name: netalertx                       # The name when you docker contiainer ls
+    image: ghcr.io/jokob-sk/netalertx:latest
+    network_mode: host
+    read_only: true                                 # Make the container filesystem read-only
+    cap_drop:                                       # Drop all capabilities for enhanced security
+      - ALL
+    cap_add:                                        # Add only the necessary capabilities
+      - NET_ADMIN                                   # Required for ARP scanning
+      - NET_RAW                                     # Required for raw socket operations
+      - NET_BIND_SERVICE                            # Required to bind to privileged ports (nbtscan)
+    volumes:
+      - type: volume                                # Persistent Docker-managed named volume for config + database
+        source: netalertx_data
+        target: /data                               # `/data/config` and `/data/db` live inside this mount
+        read_only: false
+      - type: bind                                  # Bind mount for timezone consistency
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+    tmpfs:
+      - "/tmp:uid=20211,gid=20211,mode=1700,rw,noexec,nosuid,nodev,async,noatime,nodiratime"
+    environment:
+      LISTEN_ADDR: ${LISTEN_ADDR:-0.0.0.0}                   # Listen for connections on all interfaces
+      PORT: ${PORT:-20211}                                   # Application port
+      GRAPHQL_PORT: ${GRAPHQL_PORT:-20212}                   # GraphQL API port (passed into APP_CONF_OVERRIDE at runtime)
+    mem_limit: 2048m            # Maximum memory usage
+    mem_reservation: 1024m      # Soft memory limit
+    cpu_shares: 512             # Relative CPU weight for CPU contention scenarios
+    pids_limit: 512             # Limit the number of processes/threads to prevent fork bombs
+    logging:
+      driver: "json-file"       # Use JSON file logging driver
+      options:
+        max-size: "10m"         # Rotate log files after they reach 10MB
+        max-file: "3"           # Keep a maximum of 3 log files
+    restart: unless-stopped
+
+volumes:
+  adguard-work:
+  adguard-conf:
+  dns_cache:
+  netalertx_data:
+
+
+
+
