@@ -1,5 +1,17 @@
 ---
 services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_REMOVE_VOLUMES=true
+      - WATCHTOWER_SCHEDULE=0 0 2 * * *
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
   newt:
     image: fosrl/newt
     container_name: newt
